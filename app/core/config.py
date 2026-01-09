@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     app_name: str
     environment: str
     debug: bool
+    mongo_uri: str
+    mongo_db_name: str
     
     model_config = SettingsConfigDict(
         env_file=".env",
