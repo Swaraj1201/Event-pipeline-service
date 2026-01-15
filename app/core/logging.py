@@ -26,3 +26,4 @@ def get_logger(name: Optional[str] = None) -> logging.Logger:
 # Initialize logging on import
 setup_logging()
 
+
