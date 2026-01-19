@@ -17,3 +17,32 @@ def ingest_event(event: EventIn) -> str:
     result = db.events.insert_one(event_dict)
     return str(result.inserted_id)
 
+
+def get_events(limit: int = 10, offset: int = 0):
+    """
+    Fetch events from MongoDB with pagination and sorting.
+    
+    Args:
+        limit: Maximum number of events to return (default: 10)
+        offset: Number of events to skip (default: 0)
+        
+    Returns:
+        list: List of event dictionaries with _id converted to string
+    """
+    db = get_database()
+    
+    cursor = (
+        db.events
+        .find({})
+        .sort("timestamp", -1)
+        .skip(offset)
+        .limit(limit)
+    )
+    
+    events = []
+    for event in cursor:
+        event["_id"] = str(event["_id"])
+        events.append(event)
+    
+    return events
+
