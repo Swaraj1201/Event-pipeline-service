@@ -27,10 +27,10 @@ def get_events(limit: int = 10, offset: int = 0):
         offset: Number of events to skip (default: 0)
         
     Returns:
-        list: List of event dictionaries with _id converted to string
+        list: List of event dictionaries with _id converted to string.
+              Returns empty list if no events are found.
     """
     db = get_database()
-    
     cursor = (
         db.events
         .find({})
@@ -38,11 +38,11 @@ def get_events(limit: int = 10, offset: int = 0):
         .skip(offset)
         .limit(limit)
     )
-    
+
     events = []
     for event in cursor:
         event["_id"] = str(event["_id"])
         events.append(event)
-    
+
     return events
 
