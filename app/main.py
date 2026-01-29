@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from app.api.auth_routes import router as auth_router
 from app.api.routes import router as api_router
 from app.core.config import get_settings
 from app.core.logging import get_logger
@@ -17,6 +18,7 @@ def create_app() -> FastAPI:
 
     logger.info("Starting Event Pipeline Service")
 
+    app.include_router(auth_router, prefix="/api/v1")
     app.include_router(api_router, prefix="/api/v1")
     return app
 
