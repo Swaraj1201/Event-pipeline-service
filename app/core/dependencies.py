@@ -1,9 +1,11 @@
 from fastapi import HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import ExpiredSignatureError, JWTError
 
 from app.core.security import decode_access_token
 
-security = HTTPBearer()
+# Configure HTTPBearer to return 401 instead of 403 for missing tokens
+security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
@@ -23,23 +25,43 @@ async def get_current_user(
             }
         
     Raises:
-        HTTPException: 401 if token is invalid or missing
+        HTTPException: 401 with specific error message for:
+            - Missing token
+            - Expired token
+            - Invalid token
     """
-    token = credentials.credentials
-    payload = decode_access_token(token)
-    
-    if payload is None:
+    # Handle missing token
+    if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+            detail="Authentication required. Missing token.",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    token = credentials.credentials
+    
+    # Decode and validate token with specific error handling
+    try:
+        payload = decode_access_token(token)
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired. Please login again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except JWTError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid token: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Validate token payload structure
     username: str = payload.get("sub")
     if username is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload",
+            detail="Invalid token payload: missing subject",
             headers={"WWW-Authenticate": "Bearer"},
         )
     

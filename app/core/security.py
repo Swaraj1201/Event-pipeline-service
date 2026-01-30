@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 import bcrypt
-from jose import JWTError, jwt
+from jose import ExpiredSignatureError, JWTError, jwt
 
 from app.core.config import get_settings
 
@@ -79,7 +79,11 @@ def decode_access_token(token: str) -> Optional[dict]:
         token: JWT token string to decode
         
     Returns:
-        dict: Decoded token payload if valid, None if invalid or expired
+        dict: Decoded token payload if valid
+        
+    Raises:
+        ExpiredSignatureError: If the token has expired
+        JWTError: If the token is invalid (malformed, wrong signature, etc.)
     """
     settings = get_settings()
     
@@ -90,5 +94,9 @@ def decode_access_token(token: str) -> Optional[dict]:
             algorithms=[settings.jwt_algorithm]
         )
         return payload
-    except JWTError:
-        return None
+    except ExpiredSignatureError:
+        # Re-raise expired token error with clear message
+        raise ExpiredSignatureError("Token has expired")
+    except JWTError as e:
+        # Re-raise other JWT errors (invalid signature, malformed token, etc.)
+        raise JWTError(f"Invalid token: {str(e)}")
