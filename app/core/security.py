@@ -1,10 +1,21 @@
 from datetime import datetime, timedelta
 from typing import Optional
+import secrets
 
 import bcrypt
 from jose import ExpiredSignatureError, JWTError, jwt
 
 from app.core.config import get_settings
+
+
+def generate_refresh_token() -> str:
+    """
+    Generate a secure random refresh token.
+    
+    Returns:
+        str: A cryptographically secure random token string
+    """
+    return secrets.token_urlsafe(32)
 
 
 def hash_password(password: str) -> str:

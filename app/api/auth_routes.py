@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app.core.security import create_access_token, verify_password
-from app.schemas.user import TokenResponse, UserLogin
+from app.core.security import create_access_token, generate_refresh_token, verify_password
+from app.schemas.user import RefreshTokenRequest, TokenResponse, UserLogin
 
 router = APIRouter()
 
@@ -20,6 +20,11 @@ MOCK_USERS = {
         "role": "analyst",
     },
 }
+
+# Mock refresh token store (no database yet)
+# In production, this would be stored in a database with expiration
+# Maps refresh_token -> username
+REFRESH_TOKENS = {}
 
 
 @router.post(
@@ -64,4 +69,73 @@ async def login(credentials: UserLogin):
         }
     )
     
-    return TokenResponse(access_token=access_token, token_type="bearer")
+    # Generate refresh token
+    refresh_token = generate_refresh_token()
+    
+    # Store refresh token (mock store)
+    REFRESH_TOKENS[refresh_token] = credentials.username
+    
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+    )
+
+
+@router.post(
+    "/auth/refresh",
+    tags=["Authentication"],
+    status_code=status.HTTP_200_OK,
+    response_model=TokenResponse,
+)
+async def refresh_token(request: RefreshTokenRequest):
+    """
+    Refresh access token using a valid refresh token.
+    
+    Args:
+        request: Refresh token request containing the refresh token
+        
+    Returns:
+        TokenResponse: New access token and refresh token
+        
+    Raises:
+        HTTPException: 401 if refresh token is invalid or expired
+    """
+    # Validate refresh token
+    username = REFRESH_TOKENS.get(request.refresh_token)
+    if username is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
+    
+    # Get user information
+    user = MOCK_USERS.get(username)
+    if user is None:
+        # User no longer exists, remove invalid refresh token
+        REFRESH_TOKENS.pop(request.refresh_token, None)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+    
+    # Generate new access token
+    access_token = create_access_token(
+        data={
+            "sub": username,
+            "role": user["role"],
+        }
+    )
+    
+    # Generate new refresh token (token rotation)
+    new_refresh_token = generate_refresh_token()
+    
+    # Remove old refresh token and store new one
+    REFRESH_TOKENS.pop(request.refresh_token, None)
+    REFRESH_TOKENS[new_refresh_token] = username
+    
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=new_refresh_token,
+        token_type="bearer",
+    )
