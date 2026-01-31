@@ -1,6 +1,7 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 
 from app.core.dependencies import get_current_user
+from app.services.audit_service import log_audit_event
 
 
 def require_role(required_role: str):
@@ -16,11 +17,15 @@ def require_role(required_role: str):
     Raises:
         HTTPException: 403 if user doesn't have the required role
     """
-    async def role_checker(current_user: dict = Depends(get_current_user)) -> dict:
+    async def role_checker(
+        request: Request,
+        current_user: dict = Depends(get_current_user)
+    ) -> dict:
         """
         Check if current user has the required role.
         
         Args:
+            request: FastAPI Request object for accessing client information
             current_user: Current user context from JWT token
             
         Returns:
@@ -32,6 +37,15 @@ def require_role(required_role: str):
         user_role = current_user.get("role")
         
         if user_role != required_role:
+            # Log authorization failure
+            log_audit_event(
+                user=current_user["username"],
+                role=current_user["role"],
+                action="ACCESS_DENIED",
+                resource=request.url.path,
+                status="FORBIDDEN",
+                ip_address=request.client.host if request.client else "unknown",
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied. Required role: {required_role}",
@@ -55,11 +69,15 @@ def require_any_role(*allowed_roles: str):
     Raises:
         HTTPException: 403 if user doesn't have any of the required roles
     """
-    async def role_checker(current_user: dict = Depends(get_current_user)) -> dict:
+    async def role_checker(
+        request: Request,
+        current_user: dict = Depends(get_current_user)
+    ) -> dict:
         """
         Check if current user has one of the allowed roles.
         
         Args:
+            request: FastAPI Request object for accessing client information
             current_user: Current user context from JWT token
             
         Returns:
@@ -71,6 +89,15 @@ def require_any_role(*allowed_roles: str):
         user_role = current_user.get("role")
         
         if user_role not in allowed_roles:
+            # Log authorization failure
+            log_audit_event(
+                user=current_user["username"],
+                role=current_user["role"],
+                action="ACCESS_DENIED",
+                resource=request.url.path,
+                status="FORBIDDEN",
+                ip_address=request.client.host if request.client else "unknown",
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied. Required roles: {', '.join(allowed_roles)}",

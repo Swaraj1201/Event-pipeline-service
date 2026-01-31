@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 
 from app.core.security import create_access_token, generate_refresh_token, verify_password
 from app.schemas.user import RefreshTokenRequest, TokenResponse, UserLogin
@@ -33,7 +33,7 @@ REFRESH_TOKENS = {}
     status_code=status.HTTP_200_OK,
     response_model=TokenResponse,
 )
-async def login(credentials: UserLogin):
+async def login(credentials: UserLogin, request: Request):
     """
     Authenticate user and return JWT access token.
     
@@ -88,12 +88,13 @@ async def login(credentials: UserLogin):
     status_code=status.HTTP_200_OK,
     response_model=TokenResponse,
 )
-async def refresh_token(request: RefreshTokenRequest):
+async def refresh_token(token_request: RefreshTokenRequest, request: Request):
     """
     Refresh access token using a valid refresh token.
     
     Args:
-        request: Refresh token request containing the refresh token
+        token_request: Refresh token request containing the refresh token
+        request: FastAPI Request object for accessing client information
         
     Returns:
         TokenResponse: New access token and refresh token
@@ -102,7 +103,7 @@ async def refresh_token(request: RefreshTokenRequest):
         HTTPException: 401 if refresh token is invalid or expired
     """
     # Validate refresh token
-    username = REFRESH_TOKENS.get(request.refresh_token)
+    username = REFRESH_TOKENS.get(token_request.refresh_token)
     if username is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -113,7 +114,7 @@ async def refresh_token(request: RefreshTokenRequest):
     user = MOCK_USERS.get(username)
     if user is None:
         # User no longer exists, remove invalid refresh token
-        REFRESH_TOKENS.pop(request.refresh_token, None)
+        REFRESH_TOKENS.pop(token_request.refresh_token, None)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token",
@@ -131,7 +132,7 @@ async def refresh_token(request: RefreshTokenRequest):
     new_refresh_token = generate_refresh_token()
     
     # Remove old refresh token and store new one
-    REFRESH_TOKENS.pop(request.refresh_token, None)
+    REFRESH_TOKENS.pop(token_request.refresh_token, None)
     REFRESH_TOKENS[new_refresh_token] = username
     
     return TokenResponse(
