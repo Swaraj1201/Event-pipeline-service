@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, status
 
+from app.core.rate_limiter import check_rate_limit
 from app.core.security import create_access_token, generate_refresh_token, verify_password
 from app.schemas.user import RefreshTokenRequest, TokenResponse, UserLogin
 
@@ -45,7 +46,14 @@ async def login(credentials: UserLogin, request: Request):
         
     Raises:
         HTTPException: 401 if credentials are invalid
+        HTTPException: 429 if rate limit is exceeded
     """
+    # Check rate limit
+    check_rate_limit(
+        request.client.host if request.client else "unknown",
+        resource="auth"
+    )
+    
     # Look up user
     user = MOCK_USERS.get(credentials.username)
     if user is None:
@@ -101,7 +109,14 @@ async def refresh_token(token_request: RefreshTokenRequest, request: Request):
         
     Raises:
         HTTPException: 401 if refresh token is invalid or expired
+        HTTPException: 429 if rate limit is exceeded
     """
+    # Check rate limit
+    check_rate_limit(
+        request.client.host if request.client else "unknown",
+        resource="auth"
+    )
+    
     # Validate refresh token
     username = REFRESH_TOKENS.get(token_request.refresh_token)
     if username is None:
