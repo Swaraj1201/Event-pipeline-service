@@ -30,6 +30,8 @@ REFRESH_TOKENS = {}
 
 @router.post(
     "/auth/login",
+    summary="Authenticate user",
+    description="Authenticate a user with username and password. Returns JWT access token and refresh token. Rate limited to prevent brute-force attacks.",
     tags=["Authentication"],
     status_code=status.HTTP_200_OK,
     response_model=TokenResponse,
@@ -54,16 +56,18 @@ async def login(credentials: UserLogin, request: Request):
         resource="auth"
     )
     
-    # Look up user
+    # Look up user in mock store
     user = MOCK_USERS.get(credentials.username)
     if user is None:
+        # Use generic message to prevent username enumeration
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
         )
     
-    # Validate password
+    # Validate password using bcrypt
     if not verify_password(credentials.password, user["hashed_password"]):
+        # Use generic message to prevent username enumeration
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
@@ -92,6 +96,8 @@ async def login(credentials: UserLogin, request: Request):
 
 @router.post(
     "/auth/refresh",
+    summary="Refresh access token",
+    description="Refresh an expired access token using a valid refresh token. Returns a new access token and refresh token (token rotation). Rate limited to prevent abuse.",
     tags=["Authentication"],
     status_code=status.HTTP_200_OK,
     response_model=TokenResponse,
@@ -143,10 +149,10 @@ async def refresh_token(token_request: RefreshTokenRequest, request: Request):
         }
     )
     
-    # Generate new refresh token (token rotation)
+    # Generate new refresh token (token rotation for security)
     new_refresh_token = generate_refresh_token()
     
-    # Remove old refresh token and store new one
+    # Rotate tokens: remove old and store new to prevent token reuse
     REFRESH_TOKENS.pop(token_request.refresh_token, None)
     REFRESH_TOKENS[new_refresh_token] = username
     

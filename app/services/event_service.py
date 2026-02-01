@@ -31,6 +31,7 @@ def get_events(limit: int = 10, offset: int = 0):
               Returns empty list if no events are found.
     """
     db = get_database()
+    # Query events sorted by timestamp descending (newest first)
     cursor = (
         db.events
         .find({})
@@ -40,6 +41,7 @@ def get_events(limit: int = 10, offset: int = 0):
     )
 
     events = []
+    # Convert MongoDB ObjectId to string for JSON serialization
     for event in cursor:
         event["_id"] = str(event["_id"])
         events.append(event)

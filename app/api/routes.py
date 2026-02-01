@@ -21,15 +21,17 @@ async def health_check():
 
 @router.get(
     "/events",
+    summary="List events",
+    description="Retrieve a paginated list of events sorted by timestamp (newest first). Requires admin or analyst role.",
     tags=["Events"],
     response_model=SuccessResponse,
 )
 def list_events(
-    request: Request,
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
     current_user: dict = Depends(require_any_role("admin", "analyst")),
 ):
+    """Retrieve paginated events sorted by timestamp (newest first)."""
     events = get_events(limit=limit, offset=offset)
     return SuccessResponse(
         message="Events fetched successfully",
@@ -39,6 +41,8 @@ def list_events(
 
 @router.post(
     "/events",
+    summary="Create a new event",
+    description="Ingests a new event into the system. Admin access required. All event creations are logged for audit purposes.",
     tags=["Events"],
     status_code=status.HTTP_201_CREATED,
     response_model=SuccessResponse[dict],
@@ -48,9 +52,10 @@ async def create_event(
     request: Request,
     current_user: dict = Depends(require_role("admin")),
 ):
+    """Create and ingest a new event into the system."""
     event_id = ingest_event(event)
     
-    # Log successful event creation
+    # Log successful event creation for audit trail
     log_audit_event(
         user=current_user["username"],
         role=current_user["role"],

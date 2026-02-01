@@ -26,10 +26,10 @@ def check_rate_limit(key: str, resource: str = "unknown"):
     current_time = time()
     window_start = current_time - WINDOW_SECONDS
     
-    # Get request history for this key
+    # Get request history for this key (IP address)
     history = requests_store.get(key, [])
     
-    # Filter out timestamps outside the current window
+    # Clean up old timestamps outside the current time window
     history = [t for t in history if t > window_start]
     
     # Check if rate limit is exceeded
