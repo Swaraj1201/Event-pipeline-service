@@ -1,30 +1,26 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import apiClient from "../api/client";
-import { useAuth } from "../context/AuthContext";
+import Loader from "../components/Loader";
+import ErrorMessage from "../components/ErrorMessage";
 
 const TestConnection = () => {
-  const { token, logout } = useAuth();
-  const navigate = useNavigate();
-  const [status, setStatus] = useState("Checking...");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!token) {
-      navigate("/login");
-      return;
-    }
     apiClient
       .get("/health")
-      .then(() => setStatus("Backend connected ✅"))
-      .catch(() => setStatus("Backend connection failed ❌"));
-  }, [token, navigate]);
+      .then(() => setLoading(false))
+      .catch(() => {
+        setError("Backend unavailable");
+        setLoading(false);
+      });
+  }, []);
 
-  return (
-    <div>
-      <h2>{status}</h2>
-      <button onClick={logout}>Logout</button>
-    </div>
-  );
+  if (loading) return <Loader />;
+  if (error) return <ErrorMessage message={error} />;
+
+  return <h2>Backend connected ✅</h2>;
 };
 
 export default TestConnection;

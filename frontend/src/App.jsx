@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import TestConnection from "./pages/TestConnection";
+import Navbar from "./components/Navbar";
 import { useAuth } from "./context/AuthContext";
 
 const ProtectedRoute = ({ children }) => {
@@ -17,6 +18,7 @@ function App() {
           path="/"
           element={
             <ProtectedRoute>
+              <Navbar />
               <TestConnection />
             </ProtectedRoute>
           }
