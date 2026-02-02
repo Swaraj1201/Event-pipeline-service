@@ -29,7 +29,7 @@ REFRESH_TOKENS = {}
 
 
 @router.post(
-    "/auth/login",
+    "/login",
     summary="Authenticate user",
     description="Authenticate a user with username and password. Returns JWT access token and refresh token. Rate limited to prevent brute-force attacks.",
     tags=["Authentication"],
@@ -95,7 +95,7 @@ async def login(credentials: UserLogin, request: Request):
 
 
 @router.post(
-    "/auth/refresh",
+    "/refresh",
     summary="Refresh access token",
     description="Refresh an expired access token using a valid refresh token. Returns a new access token and refresh token (token rotation). Rate limited to prevent abuse.",
     tags=["Authentication"],
