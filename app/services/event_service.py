@@ -18,23 +18,33 @@ def ingest_event(event: EventIn) -> str:
     return str(result.inserted_id)
 
 
-def get_events(limit: int = 10, offset: int = 0):
+def get_events(limit: int = 10, offset: int = 0, source: str = None, event_type: str = None):
     """
-    Fetch events from MongoDB with pagination and sorting.
+    Fetch events from MongoDB with pagination, sorting, and optional filtering.
     
     Args:
         limit: Maximum number of events to return (default: 10)
         offset: Number of events to skip (default: 0)
+        source: Optional filter by source (exact match)
+        event_type: Optional filter by event_type (exact match)
         
     Returns:
         list: List of event dictionaries with _id converted to string.
               Returns empty list if no events are found.
     """
     db = get_database()
+    
+    # Build query filter
+    query = {}
+    if source:
+        query["source"] = source
+    if event_type:
+        query["event_type"] = event_type
+    
     # Query events sorted by timestamp descending (newest first)
     cursor = (
         db.events
-        .find({})
+        .find(query)
         .sort("timestamp", -1)
         .skip(offset)
         .limit(limit)

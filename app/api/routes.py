@@ -22,17 +22,19 @@ async def health_check():
 @router.get(
     "/events",
     summary="List events",
-    description="Retrieve a paginated list of events sorted by timestamp (newest first). Requires admin or analyst role.",
+    description="Retrieve a paginated list of events sorted by timestamp (newest first). Supports filtering by source and event_type. Requires admin or analyst role.",
     tags=["Events"],
     response_model=SuccessResponse,
 )
 def list_events(
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    source: str = Query(None, description="Filter events by source (exact match)"),
+    event_type: str = Query(None, description="Filter events by event type (exact match)"),
     current_user: dict = Depends(require_any_role("admin", "analyst")),
 ):
-    """Retrieve paginated events sorted by timestamp (newest first)."""
-    events = get_events(limit=limit, offset=offset)
+    """Retrieve paginated events sorted by timestamp (newest first) with optional filtering."""
+    events = get_events(limit=limit, offset=offset, source=source, event_type=event_type)
     return SuccessResponse(
         message="Events fetched successfully",
         data=events,
