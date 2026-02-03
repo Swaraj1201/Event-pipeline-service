@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
-import TestConnection from "./pages/TestConnection";
+import EventsDashboard from "./dashboards/EventsDashboard";
 import Navbar from "./components/Navbar";
 import { useAuth } from "./context/AuthContext";
 
@@ -14,15 +14,15 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Navbar />
-              <TestConnection />
-            </ProtectedRoute>
-          }
-        />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Navbar />
+                    <EventsDashboard />
+                  </ProtectedRoute>
+                }
+              />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
